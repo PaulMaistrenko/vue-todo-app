@@ -1,3 +1,52 @@
+<script>
+  import todos from './data/todos';
+  import StatusFilter from './components/StatusFilter.vue';
+
+  export default {
+    components: {
+      StatusFilter,
+    },
+    data() {
+      let todos = [];
+      const jsonData = localStorage.getItem('todos') || '[]';
+
+      try {
+        todos = JSON.parse(jsonData);
+      } catch(err){}
+
+      return {
+        todos,
+        title: '',
+        status: 'all',
+      }
+    },
+    computed: {
+      activeTodos() {
+        return this.todos.filter(todo => !todo.completed);
+      }
+    },
+    watch: {
+      todos: {
+        deep: true,
+        handler() {
+          localStorage.setItem('todos', JSON.stringify(this.todos));
+        }
+      }
+    },
+    methods: {
+      handleSubmit() {
+        this.todos.push({
+          id: Date.now(),
+          title: this.title,
+          complete: false,
+        });
+
+        this.title = '';
+      }
+    }
+  }
+</script>
+
 <template>
     <div class="todoapp">
       <h1 class="todoapp__title">todos</h1>
@@ -6,41 +55,61 @@
         <header class="todoapp__header">
           <button
             type="button"
-            class="todoapp__toggle-all active"
             data-cy="ToggleAllButton"
-          ></button>
+            class="todoapp__toggle-all"
+            :class="{ active: activeTodos.length === 0 }"
+          >
+          </button>
 
-          <form>
+          <form @submit.prevent="handleSubmit">
             <input
               data-cy="NewTodoField"
               type="text"
               class="todoapp__new-todo"
               placeholder="What needs to be done?"
+              v-model="title"
             />
           </form>
         </header>
 
         <section class="todoapp__main" data-cy="TodoList">
-          <div data-cy="Todo" class="todo completed">
+          <div
+            data-cy="Todo"
+            v-for="todo, index of todos"
+            :key="todo.id"
+            class="todo"
+            :class="{completed: todo.completed}"
+          >
             <label class="todo__status-label">
               <input
                 data-cy="TodoStatus"
                 type="checkbox"
                 class="todo__status"
-                checked
+                v-model="todo.completed"
               />
             </label>
 
-            <span data-cy="TodoTitle" class="todo__title">
-              Completed Todo
-            </span>
+            <form v-if="false">
+              <input
+                data-cy="TodoTitleField"
+                type="text"
+                class="todo__title-field"
+                placeholder="Empty todo will be deleted"
+                value="Todo is being edited now"
+              />
+            </form>
 
-            <button type="button" class="todo__remove" data-cy="TodoDelete">
-              ×
-            </button>
+            <template v-else>
+              <span data-cy="TodoTitle" class="todo__title">{{ todo.title }}</span>
+              <button type="button" class="todo__remove" data-cy="TodoDelete" @click="todos.splice(index,1)">
+                ×
+              </button>
+            </template>
+
+            
           </div>
 
-          <div data-cy="Todo" class="todo">
+          <!--<div data-cy="Todo" class="todo">
             <label class="todo__status-label">
               <input
                 data-cy="TodoStatus"
@@ -94,44 +163,21 @@
             <button type="button" class="todo__remove" data-cy="TodoDelete">
               ×
             </button>
-          </div>
+          </div>-->
         </section>
 
         <footer class="todoapp__footer" data-cy="Footer">
           <span class="todo-count" data-cy="TodosCounter">
-            3 items left
+            {{ activeTodos.length }} items left
           </span>
 
-          <nav class="filter" data-cy="Filter">
-            <a
-              href="#/"
-              class="filter__link selected"
-              data-cy="FilterLinkAll"
-            >
-              All
-            </a>
-
-            <a
-              href="#/active"
-              class="filter__link"
-              data-cy="FilterLinkActive"
-            >
-              Active
-            </a>
-
-            <a
-              href="#/completed"
-              class="filter__link"
-              data-cy="FilterLinkCompleted"
-            >
-              Completed
-            </a>
-          </nav>
+          <StatusFilter v-model="status"/>
 
           <button
             type="button"
             class="todoapp__clear-completed"
             data-cy="ClearCompletedButton"
+            v-if="activeTodos.length > 0"
           >
             Clear completed
           </button>
@@ -139,3 +185,6 @@
       </div>
     </div>
 </template>
+
+<style>
+</style>
