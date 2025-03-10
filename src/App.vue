@@ -1,10 +1,12 @@
 <script>
   import todos from './data/todos';
   import StatusFilter from './components/StatusFilter.vue';
+  import TodoItem from './components/TodoItem.vue';
 
   export default {
     components: {
       StatusFilter,
+      TodoItem,
     },
     data() {
       let todos = [];
@@ -23,7 +25,20 @@
     computed: {
       activeTodos() {
         return this.todos.filter(todo => !todo.completed);
-      }
+      },
+      completedTodos() {
+        return this.todos.filter(todo => todo.completed);
+      },
+      visibleTodos() {
+        switch(this.status) {
+          case 'active': 
+            return this.activeTodos;
+          case 'completed':
+            return this.completedTodos;
+          default:
+            return this.todos;
+        }
+      },
     },
     watch: {
       todos: {
@@ -72,99 +87,20 @@
           </form>
         </header>
 
-        <section class="todoapp__main" data-cy="TodoList">
-          <div
-            data-cy="Todo"
-            v-for="todo, index of todos"
+        <TransitionGroup
+          name="list"
+          tag="section"
+          class="todoapp__main"
+          data-cy="TodoList"
+        >
+          <TodoItem 
+            v-for="todo, index of visibleTodos"
             :key="todo.id"
-            class="todo"
-            :class="{completed: todo.completed}"
-          >
-            <label class="todo__status-label">
-              <input
-                data-cy="TodoStatus"
-                type="checkbox"
-                class="todo__status"
-                v-model="todo.completed"
-              />
-            </label>
-
-            <form v-if="false">
-              <input
-                data-cy="TodoTitleField"
-                type="text"
-                class="todo__title-field"
-                placeholder="Empty todo will be deleted"
-                value="Todo is being edited now"
-              />
-            </form>
-
-            <template v-else>
-              <span data-cy="TodoTitle" class="todo__title">{{ todo.title }}</span>
-              <button type="button" class="todo__remove" data-cy="TodoDelete" @click="todos.splice(index,1)">
-                ×
-              </button>
-            </template>
-
-            
-          </div>
-
-          <!--<div data-cy="Todo" class="todo">
-            <label class="todo__status-label">
-              <input
-                data-cy="TodoStatus"
-                type="checkbox"
-                class="todo__status"
-              />
-            </label>
-
-            <span data-cy="TodoTitle" class="todo__title">
-              Not Completed Todo
-            </span>
-
-            <button type="button" class="todo__remove" data-cy="TodoDelete">
-              ×
-            </button>
-          </div>
-
-          <div data-cy="Todo" class="todo">
-            <label class="todo__status-label">
-              <input
-                data-cy="TodoStatus"
-                type="checkbox"
-                class="todo__status"
-              />
-            </label>
-
-            <form>
-              <input
-                data-cy="TodoTitleField"
-                type="text"
-                class="todo__title-field"
-                placeholder="Empty todo will be deleted"
-                value="Todo is being edited now"
-              />
-            </form>
-          </div>
-
-          <div data-cy="Todo" class="todo">
-            <label class="todo__status-label">
-              <input
-                data-cy="TodoStatus"
-                type="checkbox"
-                class="todo__status"
-              />
-            </label>
-
-            <span data-cy="TodoTitle" class="todo__title">
-              Todo is being saved now
-            </span>
-
-            <button type="button" class="todo__remove" data-cy="TodoDelete">
-              ×
-            </button>
-          </div>-->
-        </section>
+            :todo="todo"
+            @update="Object.assign(todo, $event)"
+            @delete="todos.splice(todos.indexOf(todo), 1)"
+          />
+        </TransitionGroup>
 
         <footer class="todoapp__footer" data-cy="Footer">
           <span class="todo-count" data-cy="TodosCounter">
@@ -187,4 +123,15 @@
 </template>
 
 <style>
+.list-enter-active,
+.list-leave-active {
+   transition: all 0.5s ease;
+   max-height: 60px;
+}
+.list-enter-from,
+.list-leave-to {
+  opacity: 0;
+  max-height: 0;
+  transform: scaleY(0);
+}
 </style>
