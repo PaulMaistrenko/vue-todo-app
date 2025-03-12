@@ -1,7 +1,8 @@
 <script>
-  import todos from './data/todos';
+  import { getTodos, createTodo, updateTodo, deleteTodo } from './api/todos';
   import StatusFilter from './components/StatusFilter.vue';
   import TodoItem from './components/TodoItem.vue';
+  import Message from "./components/Message.vue";
 
   export default {
     components: {
@@ -10,7 +11,7 @@
     },
     data() {
       let todos = [];
-      const jsonData = localStorage.getItem('todos') || '[]';
+      const jsonData = [];
 
       try {
         todos = JSON.parse(jsonData);
@@ -40,24 +41,46 @@
         }
       },
     },
-    watch: {
+    /*watch: {
       todos: {
         deep: true,
         handler() {
           localStorage.setItem('todos', JSON.stringify(this.todos));
         }
       }
+    },*/
+    mounted() {
+      getTodos()
+      .then(({ data }) => {
+      if (Array.isArray(data)) {
+        this.todos = data;
+      } else {
+        console.error('Ошибка: данные не являются массивом', data);
+      }
+    })
+    .catch(err => console.error('Ошибка загрузки todos:', err));
     },
     methods: {
       handleSubmit() {
-        this.todos.push({
-          id: Date.now(),
-          title: this.title,
-          complete: false,
+        createTodo(this.title)
+          .then(({ data }) => {
+            this.todos.push(data);
+            this.title = '';
+          }
+        );
+      },
+      updateTodo({ id, title, completed }) {
+        updateTodo({ id, title, completed })
+          .then(({ data }) => {
+            this.todos = this.todos.map(todo => todo.id !== id ? todo : data);
         });
-
-        this.title = '';
-      }
+      },
+      deleteTodo(todoId) {
+        deleteTodo(todoId)
+          .then(() => {
+            this.todos = this.todos.filter(todo => todo.id !== todoId)
+          })
+      },
     }
   }
 </script>
@@ -97,8 +120,8 @@
             v-for="todo, index of visibleTodos"
             :key="todo.id"
             :todo="todo"
-            @update="Object.assign(todo, $event)"
-            @delete="todos.splice(todos.indexOf(todo), 1)"
+            @update="updateTodo"
+            @delete="deleteTodo(todo.id)"
           />
         </TransitionGroup>
 
